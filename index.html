@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>読書クエスト</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black:       #0a0500;
+  --crimson:     #6a0a0a;
+  --crimson2:    #8b1010;
+  --win-bg:      #120600;
+  --win-border:  #8b3a00;
+  --win-border2: #d4820a;
+  --white:       #f5e8c8;
+  --yellow:      #f5c518;
+  --gold:        #d4a017;
+  --gold2:       #f0c040;
+  --gold3:       #ffe070;
+  --gray:        #7a6a50;
+  --gray2:       #b09870;
+  --green:       #50c840;
+  --red:         #d03020;
+  --orange:      #e07820;
+  --purple:      #8060c0;
+  --cyan:        #c8a060;
+  --navy:        #6a0a0a;
+  --navy2:       #8b1010;
+  --dot: 'DotGothic16', monospace;
+  --sans: 'Noto Sans JP', monospace;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { image-rendering: pixelated; }
+
+body {
+  background: var(--black);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, #3a0808 0%, #1a0303 40%, #0a0500 100%);
+  color: var(--white);
+  font-family: var(--dot);
+  min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ─── scanline overlay ─── */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events:none;
+  z-index:9999;
+}
+
+.app { max-width: 800px; margin: 0 auto; padding: 16px 12px 80px; }
+
+/* ─── DQ window box ─── */
+.dq-win {
+  border: 3px solid var(--win-border2);
+  outline: 3px solid var(--navy);
+  background: var(--win-bg);
+  padding: 16px;
+  position: relative;
+  margin-bottom: 16px;
+  box-shadow: inset 0 0 0 1px var(--win-border), 4px 4px 0 #000;
+}
+.dq-win::before {
+  content:'';
+  position:absolute; inset:3px;
+  border: 1px solid var(--win-border);
+  pointer-events:none;
+}
+
+/* ─── header ─── */
+header {
+  text-align: center;
+  padding: 16px 0 20px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.logo-svg-wrap {
+  display: inline-block;
+  width: 100%;
+  max-width: 640px;
+}
+.logo-sub {
+  font-size: 12px;
+  color: var(--gray2);
+  letter-spacing: .2em;
+  margin-top: 8px;
+}
+.header-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 16px;
+}
+.hstat { text-align:center; }
+.hstat-val { font-size: 22px; color: var(--gold2); }
+.hstat-label { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+/* ─── tabs (DQ command style) ─── */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+}
+.tab {
+  flex:1; padding: 10px 8px; text-align:center;
+  font-family: var(--dot); font-size: 14px;
+  color: var(--gray2);
+  background: var(--black);
+  border: 2px solid var(--win-border);
+  cursor: pointer;
+  transition: all .1s;
+  position: relative;
+}
+.tab:first-child { border-right: 1px solid var(--win-border); }
+.tab:last-child  { border-left:  1px solid var(--win-border); }
+.tab:hover { color: var(--white); background: #2a0800; }
+.tab.active {
+  color: var(--gold2);
+  background: var(--win-bg);
+  border-color: var(--win-border2);
+  text-shadow: 0 0 8px var(--gold);
+}
+.tab.active::before {
+  content: '▶';
+  position: absolute;
+  left: 10px;
+  color: var(--gold2);
+  font-size: 12px;
+}
+
+.panel { display:none; }
+.panel.active { display:block; }
+
+/* ─── section title ─── */
+.dq-title {
+  font-size: 13px;
+  color: var(--gold);
+  margin-bottom: 12px;
+  letter-spacing: .1em;
+}
+.dq-title::before { content: '【'; color: var(--win-border2); }
+.dq-title::after  { content: '】'; color: var(--win-border2); }
+
+/* ─── inputs ─── */
+.search-row { display:flex; gap:8px; margin-bottom:12px; position:relative; }
+.input-text {
+  flex:1;
+  background: #000020;
+  border: 2px solid var(--win-border);
+  padding: 8px 12px;
+  color: var(--white);
+  font-family: var(--dot);
+  font-size: 15px;
+  outline: none;
+  transition: border .1s;
+  box-shadow: inset 2px 2px 0 rgba(0,0,80,.5);
+}
+.input-text:focus { border-color: var(--gold2); color: var(--gold2); }
+.input-text::placeholder { color: #404060; }
+
+.dq-btn {
+  background: var(--crimson2);
+  border: 2px solid var(--win-border2);
+  color: var(--white);
+  font-family: var(--dot);
+  font-size: 14px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all .1s;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 #000;
+}
+.dq-btn:hover { background: #a01818; box-shadow: 1px 1px 0 #000; transform: translate(1px,1px); }
+.dq-btn:active { box-shadow: none; transform: translate(2px,2px); }
+.dq-btn-primary {
+  background: #3a2200;
+  border-color: var(--gold2);
+  color: var(--gold2);
+}
+.dq-btn-primary:hover { background: #5a3400; }
+.dq-btn-danger {
+  background: #500000;
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ─── search results ─── */
+.search-results {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--win-bg);
+  border: 2px solid var(--win-border2);
+  z-index: 100; max-height: 240px; overflow-y:auto;
+  margin-top: 2px;
+  display: none;
+  box-shadow: 4px 4px 0 #000;
+}
+.search-result-item {
+  padding: 8px 12px; cursor: pointer;
+  border-bottom: 1px solid var(--win-border);
+  transition: background .1s;
+  font-size: 14px;
+}
+.search-result-item:last-child { border-bottom:none; }
+.search-result-item:hover { background: var(--crimson2); color: var(--gold2); }
+.search-result-item:hover::before { content:'▶ '; color: var(--gold2); }
+.sri-sub { font-size: 11px; color: var(--gray); margin-top: 2px; padding-left: 14px; }
+
+/* ─── book info card ─── */
+.book-info-card { display:none; }
+.book-info-card.visible { display:block; margin-top: 12px; }
+.book-meta { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+.meta-item label { display:block; font-size:11px; color:var(--gold); margin-bottom:4px; letter-spacing:.08em; }
+.meta-item input, .meta-item select {
+  width:100%;
+  background: #000020;
+  border: 2px solid var(--win-border);
+  padding: 7px 10px;
+  color: var(--white);
+  font-family: var(--dot);
+  font-size: 14px;
+  outline: none;
+}
+.meta-item input:focus, .meta-item select:focus { border-color: var(--yellow); }
+.meta-item select option { background: #000020; }
+.add-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+
+/* ─── history list ─── */
+.history-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.history-count { font-size:13px; color:var(--gray); }
+.sort-select {
+  background: #000020; border: 2px solid var(--win-border);
+  padding: 5px 8px; color: var(--gray2);
+  font-family: var(--dot); font-size: 12px; outline:none;
+}
+
+.book-card {
+  background: var(--win-bg);
+  border: 2px solid var(--win-border);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  display: flex; align-items: flex-start; gap: 12px;
+  transition: border-color .1s;
+  animation: fadeIn .2s ease;
+  box-shadow: 2px 2px 0 #000;
+}
+.book-card:hover { border-color: var(--win-border2); }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+
+.book-icon { font-size: 20px; flex-shrink:0; margin-top:2px; }
+.book-main { flex:1; min-width:0; }
+.book-title-row { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.book-title { font-size: 15px; color: var(--white); }
+.genre-badge {
+  font-size: 10px; padding: 1px 6px;
+  border: 1px solid var(--win-border);
+  color: var(--gold);
+  white-space: nowrap;
+  font-family: var(--dot);
+}
+.book-author { font-size: 12px; color: var(--gray); margin-top: 2px; }
+.book-footer { display:flex; gap:14px; margin-top:6px; align-items:center; flex-wrap:wrap; }
+.book-stat { font-size: 12px; color: var(--gray); }
+.book-stat span { color: var(--gray2); }
+.exp-badge { font-size: 11px; color: var(--yellow); }
+.del-btn {
+  margin-left:auto; background:none; border:none;
+  color: var(--gray); cursor:pointer; font-size:14px;
+  padding:2px 6px; font-family: var(--dot);
+  transition: color .1s;
+}
+.del-btn:hover { color: var(--red); }
+
+.empty-state { text-align:center; padding:48px 20px; color:var(--gray); }
+.empty-icon { font-size:40px; margin-bottom:16px; opacity:.5; }
+.empty-text { font-size: 15px; color: var(--gray2); }
+
+/* ─── character panel ─── */
+.char-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.char-card { background:var(--win-bg); border:2px solid var(--win-border); padding:16px; box-shadow:2px 2px 0 #000; }
+.char-card.full { grid-column:1/-1; }
+.char-label { font-size:11px; color:var(--gold); letter-spacing:.1em; margin-bottom:10px; }
+.char-label::before { content:'─ '; }
+.char-label::after  { content:' ─'; }
+
+.job-name { font-size: 22px; color: var(--gold2); text-shadow: 2px 2px 0 #5a2000; line-height:1.3; }
+.job-rarity {
+  display:inline-block; font-size:11px; padding: 1px 8px;
+  margin-top:6px; border: 1px solid;
+  font-family: var(--dot);
+}
+.rarity-normal { border-color: var(--gray2); color: var(--gray2); }
+.rarity-rare   { border-color: #c890a0; color: #e0a8b8; }
+.rarity-super  { border-color: var(--gold2); color: var(--gold2); }
+.rarity-legend { border-color: var(--red); color: var(--orange); animation: legendPulse 1.5s ease-in-out infinite; }
+@keyframes legendPulse { 0%,100%{color:var(--orange)} 50%{color:var(--red);text-shadow:0 0 8px var(--red)} }
+.job-desc { font-size:12px; color:var(--gray2); margin-top:10px; line-height:1.7; }
+
+.lv-row { display:flex; align-items:baseline; gap:6px; margin-bottom:6px; }
+.lv-num { font-size: 38px; color: var(--gold2); line-height:1; text-shadow: 2px 2px 0 #5a2000; }
+.lv-label { font-size:13px; color:var(--gray); }
+
+/* DQ-style EXP bar */
+.exp-bar-wrap { position:relative; margin-top:8px; height: 14px; background:#1a0500; border: 1px solid var(--win-border); overflow:hidden; }
+.exp-bar { height:100%; background: repeating-linear-gradient(90deg, #d4820a 0px, #d4820a 6px, #a06000 6px, #a06000 8px); transition: width .5s steps(20); }
+.exp-text { font-size:11px; color:var(--gray); margin-top:4px; }
+.total-exp-val { font-size: 20px; color: var(--gold2); margin-top: 8px; }
+
+/* ─── params ─── */
+.params-list { display:flex; flex-direction:column; gap:8px; }
+.param-row { display:flex; align-items:center; gap:10px; }
+.param-name { font-size:13px; width:56px; flex-shrink:0; color:var(--white); }
+.param-val { font-size:16px; width:38px; text-align:right; flex-shrink:0; }
+.param-bar-wrap { flex:1; background:#1a0500; border:1px solid var(--win-border); height:12px; overflow:hidden; }
+.param-bar { height:100%; transition: width .6s steps(15); }
+
+/* ─── stats ─── */
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.stat-box { text-align:center; }
+.stat-val { font-size:20px; color:var(--gold2); }
+.stat-label { font-size:11px; color:var(--gray); margin-top:2px; }
+
+/* ─── modal ─── */
+.modal-overlay {
+  display:none; position:fixed; inset:0;
+  background: rgba(0,0,0,.92);
+  z-index:1000; align-items:center; justify-content:center;
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  background: var(--win-bg);
+  border: 3px solid var(--win-border2);
+  outline: 3px solid var(--navy);
+  padding: 32px 28px; text-align:center;
+  max-width: 380px; width:90%;
+  box-shadow: 6px 6px 0 #000;
+  animation: modalIn .3s steps(8);
+  position: relative;
+}
+.modal::before {
+  content:'';
+  position:absolute; inset:4px;
+  border: 1px solid var(--win-border);
+  pointer-events:none;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:none} }
+.modal-icon { font-size:40px; margin-bottom:12px; animation: iconSpin 1s steps(4) 1; }
+@keyframes iconSpin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+.modal-title { font-size: 20px; color: var(--gold2); margin-bottom:8px; text-shadow:2px 2px 0 #5a2000; }
+.modal-sub { font-size:13px; color:var(--gray2); margin-bottom:16px; line-height:1.8; white-space:pre-line; }
+.modal-job { font-size: 26px; color: var(--gold2); margin:12px 0; text-shadow:2px 2px 0 #5a2000; }
+
+/* ─── 称号図鑑 ─── */
+.titles-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.title-card {
+  border: 2px solid var(--win-border);
+  padding: 12px 14px;
+  background: #000010;
+  box-shadow: 2px 2px 0 #000;
+  opacity: .35;
+  transition: opacity .2s;
+}
+.title-card.unlocked {
+  opacity: 1;
+  border-color: var(--win-border2);
+  background: var(--win-bg);
+  animation: titleUnlock .4s steps(4);
+}
+@keyframes titleUnlock { from{border-color:var(--yellow)} to{border-color:var(--win-border2)} }
+.title-card.unlocked.new-unlock {
+  border-color: var(--yellow);
+  animation: newUnlock 1s steps(2) infinite;
+}
+@keyframes newUnlock { 0%,100%{border-color:var(--yellow)} 50%{border-color:var(--win-border2)} }
+.title-icon { font-size:22px; margin-bottom:6px; }
+.title-name { font-size:14px; color:var(--yellow); margin-bottom:4px; }
+.title-card:not(.unlocked) .title-name { color:var(--gray); }
+.title-cond { font-size:11px; color:var(--gray); line-height:1.5; }
+.title-card.unlocked .title-cond { color:var(--gray2); }
+.title-badge { font-size:10px; padding:1px 6px; border:1px solid; display:inline-block; margin-bottom:6px; }
+.tb-book  { border-color:#00b8f8; color:#00b8f8; }
+.tb-page  { border-color:var(--green); color:var(--green); }
+.tb-genre { border-color:var(--orange); color:var(--orange); }
+.tb-special { border-color:#d860f8; color:#d860f8; }
+
+@media(max-width:560px){ .titles-grid { grid-template-columns:1fr; } }
+
+/* ─── joke job modal ─── */
+.modal-joke .modal-title { color: var(--green); }
+.modal-joke .modal-job  { color: var(--green); text-shadow: 2px 2px 0 #004000; font-size:22px; }
+.loading-inline {
+  display:inline-block;
+  color: var(--yellow);
+  animation: dotAnim 1s steps(4) infinite;
+}
+@keyframes dotAnim { 0%{content:'.'} 25%{content:'..'} 50%{content:'...'} 75%{content:'    '} }
+
+/* ─── scrollbar ─── */
+::-webkit-scrollbar { width:8px; }
+::-webkit-scrollbar-track { background:#000010; }
+::-webkit-scrollbar-thumb { background: var(--crimson2); border:1px solid var(--win-border); }
+
+/* ─── cursor blink ─── */
+.cursor { animation: blink .8s steps(1) infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+@media(max-width:560px){
+  .char-grid { grid-template-columns:1fr; }
+  .char-card.full { grid-column:1; }
+  .book-meta { grid-template-columns:1fr; }
+  .logo-main { font-size:24px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo-svg-wrap">
+      <svg viewBox="0 0 640 160" xmlns="http://www.w3.org/2000/svg" width="100%" style="display:block">
+        <defs>
+          <!-- gold gradient for main title -->
+          <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#fff5a0"/>
+            <stop offset="20%"  stop-color="#f5c518"/>
+            <stop offset="50%"  stop-color="#e8a800"/>
+            <stop offset="75%"  stop-color="#f0c040"/>
+            <stop offset="100%" stop-color="#a06800"/>
+          </linearGradient>
+          <!-- crimson bg gradient -->
+          <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#3a0000"/>
+            <stop offset="50%"  stop-color="#1a0000"/>
+            <stop offset="100%" stop-color="#2a0800"/>
+          </linearGradient>
+          <!-- outer border gold -->
+          <linearGradient id="borderGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#f0c040"/>
+            <stop offset="50%"  stop-color="#a06800"/>
+            <stop offset="100%" stop-color="#f0c040"/>
+          </linearGradient>
+          <!-- shine for title text -->
+          <linearGradient id="shineGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.6"/>
+            <stop offset="40%"  stop-color="#fff5a0" stop-opacity="0.2"/>
+            <stop offset="100%" stop-color="#f5c518" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="emboss">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur"/>
+            <feOffset dx="2" dy="3" result="offset"/>
+            <feFlood flood-color="#300000" result="color"/>
+            <feComposite in="color" in2="offset" operator="in" result="shadow"/>
+            <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- outer frame -->
+        <rect x="2" y="2" width="636" height="156" rx="4" fill="url(#bgGrad)"/>
+        <!-- ornate border double line -->
+        <rect x="2"  y="2"  width="636" height="156" rx="4" fill="none" stroke="url(#borderGrad)" stroke-width="4"/>
+        <rect x="8"  y="8"  width="624" height="140" rx="2" fill="none" stroke="#d4820a" stroke-width="1.5"/>
+        <rect x="11" y="11" width="618" height="134" rx="2" fill="none" stroke="#7a3a00" stroke-width="1"/>
+
+        <!-- corner ornaments -->
+        <g fill="#d4820a">
+          <polygon points="2,2 22,2 2,22"/>
+          <polygon points="638,2 618,2 638,22"/>
+          <polygon points="2,158 22,158 2,138"/>
+          <polygon points="638,158 618,158 638,138"/>
+        </g>
+        <g fill="#f0c040" opacity="0.7">
+          <polygon points="2,2 14,2 2,14"/>
+          <polygon points="638,2 626,2 638,14"/>
+          <polygon points="2,158 14,158 2,146"/>
+          <polygon points="638,158 626,158 638,146"/>
+        </g>
+
+        <!-- decorative horizontal rules -->
+        <line x1="20" y1="22" x2="620" y2="22" stroke="#7a3a00" stroke-width="1"/>
+        <line x1="20" y1="138" x2="620" y2="138" stroke="#7a3a00" stroke-width="1"/>
+
+        <!-- diamond ornaments on rules -->
+        <g fill="#d4820a">
+          <polygon points="320,16 326,22 320,28 314,22"/>
+          <polygon points="80,22  86,17  92,22  86,27"/>
+          <polygon points="548,22 554,17 560,22 554,27"/>
+          <polygon points="320,132 326,138 320,144 314,138"/>
+        </g>
+
+        <!-- subtitle top -->
+        <text x="320" y="38" text-anchor="middle" font-family="'DotGothic16',monospace" font-size="11" fill="#c8903a" letter-spacing="8">～ READING ADVENTURE ～</text>
+
+        <!-- main title shadow layer -->
+        <text x="323" y="103" text-anchor="middle"
+          font-family="'Noto Sans JP','DotGothic16',monospace"
+          font-size="62" font-weight="900"
+          fill="#300000" opacity="0.8"
+          letter-spacing="6">読書クエスト</text>
+
+        <!-- main title gold fill -->
+        <text x="320" y="100" text-anchor="middle"
+          font-family="'Noto Sans JP','DotGothic16',monospace"
+          font-size="62" font-weight="900"
+          fill="url(#goldGrad)"
+          filter="url(#emboss)"
+          letter-spacing="6">読書クエスト</text>
+
+        <!-- main title shine overlay -->
+        <text x="320" y="100" text-anchor="middle"
+          font-family="'Noto Sans JP','DotGothic16',monospace"
+          font-size="62" font-weight="900"
+          fill="url(#shineGrad)"
+          letter-spacing="6">読書クエスト</text>
+
+        <!-- subtitle bottom -->
+        <text x="320" y="128" text-anchor="middle" font-family="'DotGothic16',monospace" font-size="11" fill="#c8903a" letter-spacing="4">あなたの読書を冒険に変えよう</text>
+      </svg>
+    </div>
+
+    <div class="header-stats">
+      <div class="hstat">
+        <div class="hstat-val" id="h-books">0</div>
+        <div class="hstat-label">さつ よみおわった</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val" id="h-pages">0</div>
+        <div class="hstat-label">そうページすう</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('history')">どくしょきろく</button>
+    <button class="tab" onclick="switchTab('character')">ぼうけんしゃ</button>
+    <button class="tab" onclick="switchTab('titles')">しょうごう図鑑</button>
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div class="panel active" id="panel-history">
+    <div class="dq-win">
+      <div class="dq-title">ほんをとうろくする</div>
+      <div class="search-row">
+        <input class="input-text" id="search-input" type="text"
+          placeholder="タイトルをにゅうりょく..." autocomplete="off"
+          oninput="onSearchInput()" onkeydown="if(event.key==='Enter')searchBooks()">
+        <button class="dq-btn" onclick="searchBooks()">けんさく</button>
+        <div class="search-results" id="search-results"></div>
+      </div>
+
+      <div class="book-info-card" id="book-info-card">
+        <div class="dq-win" style="margin-bottom:0">
+          <div class="book-meta">
+            <div class="meta-item">
+              <label>タイトル</label>
+              <input type="text" id="f-title" placeholder="タイトル">
+            </div>
+            <div class="meta-item">
+              <label>ちょしゃ</label>
+              <input type="text" id="f-author" placeholder="ちょしゃめい">
+            </div>
+            <div class="meta-item">
+              <label>ジャンル</label>
+              <select id="f-genre">
+                <option value="文芸・小説">文芸・小説</option>
+                <option value="ミステリー・SF">ミステリー・SF</option>
+                <option value="ファンタジー・冒険">ファンタジー・冒険</option>
+                <option value="歴史・時代小説">歴史・時代小説</option>
+                <option value="人文・学術">人文・学術</option>
+                <option value="ビジネス・自己啓発">ビジネス・自己啓発</option>
+                <option value="詩・エッセイ">詩・エッセイ</option>
+                <option value="芸術・デザイン">芸術・デザイン</option>
+                <option value="科学・技術">科学・技術</option>
+                <option value="歴史・地理">歴史・地理</option>
+                <option value="旅行・紀行">旅行・紀行</option>
+                <option value="恋愛・ロマンス">恋愛・ロマンス</option>
+                <option value="その他">その他</option>
+              </select>
+            </div>
+            <div class="meta-item">
+              <label>ページすう</label>
+              <input type="number" id="f-pages" placeholder="れい: 320" min="1">
+            </div>
+            <div class="meta-item">
+              <label>よみおわった日</label>
+              <input type="date" id="f-date">
+            </div>
+          </div>
+          <div class="add-actions">
+            <button class="dq-btn" onclick="cancelAdd()">やめる</button>
+            <button class="dq-btn dq-btn-primary" onclick="addBook()">とうろくする</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="history-header">
+      <div class="history-count" id="history-count">0さつのきろく</div>
+      <select class="sort-select" onchange="renderHistory(this.value)">
+        <option value="newest">あたらしい順</option>
+        <option value="oldest">ふるい順</option>
+        <option value="pages">ページすう順</option>
+      </select>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- CHARACTER PANEL -->
+  <div class="panel" id="panel-character">
+    <div class="char-grid">
+      <div class="char-card">
+        <div class="char-label">しょくぎょう</div>
+        <div class="job-name" id="job-name">—</div>
+        <div><span class="job-rarity rarity-normal" id="job-rarity">つうじょう</span></div>
+        <div class="job-desc" id="job-desc"></div>
+      </div>
+      <div class="char-card">
+        <div class="char-label">ぼうけんしゃレベル</div>
+        <div class="lv-row">
+          <div class="lv-num" id="char-lv">1</div>
+          <div class="lv-label">Lv</div>
+        </div>
+        <div class="exp-bar-wrap"><div class="exp-bar" id="exp-bar" style="width:0%"></div></div>
+        <div class="exp-text" id="exp-text">0 / 300 EXP</div>
+        <div style="margin-top:14px">
+          <div class="char-label">そうけいけんち</div>
+          <div class="total-exp-val" id="total-exp">0 EXP</div>
+        </div>
+      </div>
+      <div class="char-card full">
+        <div class="char-label">パラメータ</div>
+        <div class="params-list" id="params-list"></div>
+      </div>
+      <div class="char-card full">
+        <div class="char-label">とうけい</div>
+        <div class="stats-grid" id="stats-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- TITLES PANEL -->
+  <div class="panel" id="panel-titles">
+    <div class="dq-win">
+      <div class="dq-title">しょうごう図鑑</div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:16px">かいじょした しょうごうは ひかっています</div>
+      <div id="titles-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Level Up Modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-icon" id="modal-icon">★</div>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="modal-job" id="modal-job"></div>
+    <button class="dq-btn dq-btn-primary" onclick="closeModal()">つづける</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'reading_rpg_v1';
+let books = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+// ── EXP / Level ──
+const EXP_TABLE = [];
+(()=>{ let r=300; for(let i=0;i<99;i++){EXP_TABLE.push(Math.round(r));r*=1.4;} })();
+
+function calcLevel(exp) {
+  let lv=1, rem=exp;
+  while(lv<=99 && rem>=EXP_TABLE[lv-1]){rem-=EXP_TABLE[lv-1];lv++;}
+  return {lv, rem, req: EXP_TABLE[lv-1]||999999};
+}
+
+// ── Genre → params ──
+const GP = {
+  '人文・学術':        {知識力:5,感受力:1,探究力:2,世界力:1,創造力:1},
+  'ビジネス・自己啓発': {知識力:5,感受力:0,探究力:3,世界力:1,創造力:1},
+  '科学・技術':        {知識力:4,感受力:0,探究力:5,世界力:1,創造力:1},
+  '文芸・小説':        {知識力:1,感受力:5,探究力:1,世界力:2,創造力:2},
+  '詩・エッセイ':      {知識力:1,感受力:6,探究力:0,世界力:1,創造力:3},
+  '恋愛・ロマンス':    {知識力:0,感受力:6,探究力:1,世界力:1,創造力:2},
+  'ミステリー・SF':    {知識力:2,感受力:1,探究力:6,世界力:1,創造力:2},
+  'ファンタジー・冒険': {知識力:1,感受力:2,探究力:2,世界力:3,創造力:5},
+  '芸術・デザイン':    {知識力:1,感受力:3,探究力:1,世界力:1,創造力:6},
+  '歴史・時代小説':    {知識力:3,感受力:2,探究力:2,世界力:5,創造力:1},
+  '歴史・地理':        {知識力:3,感受力:0,探究力:2,世界力:6,創造力:0},
+  '旅行・紀行':        {知識力:1,感受力:2,探究力:1,世界力:6,創造力:2},
+  'その他':            {知識力:1,感受力:1,探究力:1,世界力:1,創造力:1},
+};
+
+function calcParams() {
+  const p={知識力:0,感受力:0,探究力:0,世界力:0,創造力:0};
+  const exp=books.reduce((s,b)=>s+(b.pages||0),0);
+  const bonus=(calcLevel(exp).lv-1)*2;
+  for(const k of Object.keys(p)) p[k]+=bonus;
+  for(const b of books){
+    const g=GP[b.genre]||GP['その他'];
+    for(const k of Object.keys(p)) p[k]+=g[k]||0;
+  }
+  return p;
+}
+
+// ── Jobs (extended) ──
+const JOBS = [
+  {name:'学徒',         rarity:'normal', desc:'知の扉を叩き始めた若き探求者。',                         cond:()=>true},
+  {name:'司書',         rarity:'normal', desc:'膨大な知識を整理し、次の知に橋渡しする者。',             cond:p=>topParam(p)==='知識力'&&p.知識力>5},
+  {name:'詩人',         rarity:'normal', desc:'感性の糸で世界を紡ぐ言葉の魔術師。',                     cond:p=>topParam(p)==='感受力'&&p.感受力>5},
+  {name:'探偵',         rarity:'normal', desc:'謎の奥に真実を見出す鋭い観察者。',                       cond:p=>topParam(p)==='探究力'&&p.探究力>5},
+  {name:'旅人',         rarity:'normal', desc:'地平線の向こうに常に新しい物語を求める者。',             cond:p=>topParam(p)==='世界力'&&p.世界力>5},
+  {name:'夢想家',       rarity:'normal', desc:'無限の想像で現実を塗り替えようとする者。',               cond:p=>topParam(p)==='創造力'&&p.創造力>5},
+  {name:'吟遊詩人',     rarity:'normal', desc:'詩の言葉と旅の記憶で人々の心を豊かにする放浪の歌い手。', cond:p=>p.感受力>=15&&p.世界力>=15&&diff(p,'感受力','世界力')<10},
+  {name:'民俗学者',     rarity:'normal', desc:'各地の風土と歴史を渉猟し、人類の記憶を記録する者。',     cond:p=>p.世界力>=15&&p.知識力>=15&&p.感受力>=10},
+  {name:'ロマン主義者', rarity:'normal', desc:'感受力と創造力で世界を美しく染め直す理想家。',           cond:p=>p.感受力>=15&&p.創造力>=15&&diff(p,'感受力','創造力')<10},
+  // レア
+  {name:'賢者',           rarity:'rare', desc:'知識と探究の両輪で真理に近づく者。深い洞察が言葉ににじむ。',         cond:p=>p.知識力>=30&&p.探究力>=30&&diff(p,'知識力','探究力')<12},
+  {name:'叙事詩人',       rarity:'rare', desc:'感受と創造が融合した、時代を超える物語の紡ぎ手。',                   cond:p=>p.感受力>=30&&p.創造力>=30&&diff(p,'感受力','創造力')<12},
+  {name:'歴史魔導士',     rarity:'rare', desc:'世界の記憶と探究の眼で過去を召喚する者。',                           cond:p=>p.世界力>=30&&p.探究力>=30&&diff(p,'世界力','探究力')<12},
+  {name:'共感の錬金術師', rarity:'rare', desc:'知識と感受から人の心を動かす言葉を錬成する。',                       cond:p=>p.感受力>=30&&p.知識力>=30&&diff(p,'感受力','知識力')<12},
+  {name:'世界樹の守人',   rarity:'rare', desc:'世界と創造の視座で、あらゆる文化を結ぶ存在。',                       cond:p=>p.世界力>=30&&p.創造力>=30&&diff(p,'世界力','創造力')<12},
+  {name:'星読みの哲人',   rarity:'rare', desc:'知識・感受・世界の三つを携え、宇宙の理を読み解く哲学者。',           cond:p=>p.知識力>=25&&p.感受力>=25&&p.世界力>=25},
+  {name:'蒼穹の冒険譚師', rarity:'rare', desc:'ファンタジーと旅を愛し、天空を舞台に物語を紡ぐ者。',                 cond:p=>p.創造力>=30&&p.世界力>=25&&diff(p,'創造力','世界力')<15},
+  {name:'科学幻想家',     rarity:'rare', desc:'科学の知識とSFの夢想が交差する境界に立つ者。',                       cond:p=>p.知識力>=25&&p.探究力>=25&&p.創造力>=20},
+  // 超レア
+  {name:'虚実の書記官',   rarity:'super', desc:'知識・探究・創造の三力が結晶化した、現実と幻想の狭間に立つ筆録者。', cond:p=>p.知識力>=50&&p.探究力>=50&&p.創造力>=50},
+  {name:'時詠みの旅人',   rarity:'super', desc:'世界・感受・創造が高みに達した、時空を越えて物語を詠む放浪者。',     cond:p=>p.世界力>=50&&p.感受力>=50&&p.創造力>=50},
+  {name:'カオスの語り部', rarity:'super', desc:'五つの力が均等に高まった混沌の体現者。何者でもあり、何者でもない。', cond:p=>{const v=Object.values(p),a=v.reduce((s,x)=>s+x,0)/5;return a>=40&&Math.max(...v)-Math.min(...v)<15;}},
+  {name:'深淵の観測者',   rarity:'super', desc:'知識・感受・探究が深く交わる者。世界の表と裏を同時に見通す。',       cond:p=>p.知識力>=45&&p.感受力>=45&&p.探究力>=45},
+  // 伝説
+  {name:'次元司書アカシア',rarity:'legend',desc:'全ての知が集積する「アカシック・レコード」の管理者。あなたの読書は宇宙の記憶となった。',cond:p=>{const exp=books.reduce((s,b)=>s+(b.pages||0),0);return Math.min(...Object.values(p))>=60&&exp>=50000;}},
+  {name:'星霜の万智人',   rarity:'legend',desc:'百冊の物語が魂に刻まれ、星の知恵を宿した伝説の読み手。時代を超えて語り継がれる存在。',cond:p=>{const exp=books.reduce((s,b)=>s+(b.pages||0),0);const {lv}=calcLevel(exp);return Math.min(...Object.values(p))>=60&&lv>=40&&books.length>=100;}},
+];
+
+// ── Joke Jobs（冊数節目でランダム発動）──
+const JOKE_JOBS = [
+  {name:'積読公爵',      desc:'読んでいない本が増えれば増えるほど威厳が増す謎の貴族。',   milestone:10},
+  {name:'あらすじ侯爵',  desc:'本を読まずともあらすじだけで会話を乗り切る達人。',           milestone:20},
+  {name:'栞忘れ騎士団',  desc:'読みかけの本に栞を挟み忘れ続ける呪われた騎士たち。',         milestone:30},
+  {name:'カバー折り魔王', desc:'文庫本のカバーを折ることで魔力を得る闇の読書家。',           milestone:50},
+  {name:'帯コレクター将軍',desc:'本の帯だけを集め続ける謎の将軍。読むとは何か。',           milestone:75},
+  {name:'深夜活字中毒者', desc:'「あと1ページだけ」と言い続けて朝を迎える者。',             milestone:100},
+];
+
+// ── 称号 ──
+const ALL_TITLES = [
+  {id:'b1',    icon:'📖', name:'はじめの一歩',    badge:'tb-book',   cond:()=>books.length>=1,          hint:'1さつ よみおわる'},
+  {id:'b5',    icon:'📚', name:'本の友',           badge:'tb-book',   cond:()=>books.length>=5,          hint:'5さつ よみおわる'},
+  {id:'b10',   icon:'🔖', name:'十冊読者',         badge:'tb-book',   cond:()=>books.length>=10,         hint:'10さつ よみおわる'},
+  {id:'b30',   icon:'📕', name:'三十冊の求道者',   badge:'tb-book',   cond:()=>books.length>=30,         hint:'30さつ よみおわる'},
+  {id:'b50',   icon:'📗', name:'五十冊の探求者',   badge:'tb-book',   cond:()=>books.length>=50,         hint:'50さつ よみおわる'},
+  {id:'b100',  icon:'👑', name:'百冊読者',         badge:'tb-book',   cond:()=>books.length>=100,        hint:'100さつ よみおわる'},
+  {id:'p1000', icon:'📄', name:'千ページの旅人',   badge:'tb-page',   cond:()=>totalPages()>=1000,       hint:'そうページ 1,000 とっぱ'},
+  {id:'p5000', icon:'📜', name:'五千ページの賢者', badge:'tb-page',   cond:()=>totalPages()>=5000,       hint:'そうページ 5,000 とっぱ'},
+  {id:'p10000',icon:'🏆', name:'一万ページの覇者', badge:'tb-page',   cond:()=>totalPages()>=10000,      hint:'そうページ 10,000 とっぱ'},
+  {id:'p50000',icon:'⚡', name:'五万ページの伝説', badge:'tb-page',   cond:()=>totalPages()>=50000,      hint:'そうページ 50,000 とっぱ'},
+  {id:'g3',    icon:'🌈', name:'ジャンル探検家',   badge:'tb-genre',  cond:()=>uniqueGenres()>=3,        hint:'3しゅるい以上のジャンルをよむ'},
+  {id:'g6',    icon:'🎭', name:'万能読書家',        badge:'tb-genre',  cond:()=>uniqueGenres()>=6,        hint:'6しゅるい以上のジャンルをよむ'},
+  {id:'g_all', icon:'🌐', name:'全ジャンル制覇',   badge:'tb-genre',  cond:()=>uniqueGenres()>=12,       hint:'すべてのジャンルをよむ'},
+  {id:'sp_fat',icon:'🐋', name:'長編の覇者',       badge:'tb-special',cond:()=>books.some(b=>(b.pages||0)>=500), hint:'500ページいじょうの本をよむ'},
+  {id:'sp_fast',icon:'⚡',name:'速読の使徒',        badge:'tb-special',cond:()=>booksInMonth()>=3,        hint:'1ヶ月に3さつよむ'},
+  {id:'sp_yr', icon:'🗓️', name:'年間読書家',        badge:'tb-special',cond:()=>booksInYear()>=12,        hint:'1ねんで12さつよむ'},
+];
+
+function totalPages(){return books.reduce((s,b)=>s+(b.pages||0),0);}
+function uniqueGenres(){return new Set(books.map(b=>b.genre)).size;}
+function booksInMonth(){
+  const now=new Date(),m=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  return books.filter(b=>b.date&&b.date.startsWith(m)).length;
+}
+function booksInYear(){
+  return books.filter(b=>b.date&&b.date.startsWith(String(new Date().getFullYear()))).length;
+}
+function getUnlockedTitles(){return ALL_TITLES.filter(t=>t.cond());}
+function checkNewTitles(prevUnlocked){
+  const prev=new Set(prevUnlocked.map(t=>t.id));
+  return getUnlockedTitles().filter(t=>!prev.has(t.id));
+}
+
+function topParam(p){return Object.entries(p).sort((a,b)=>b[1]-a[1])[0][0];}
+function diff(p,a,b){return Math.abs(p[a]-p[b]);}
+
+function determineJob(p) {
+  for(const r of ['legend','super','rare','normal']){
+    const c=JOBS.filter(j=>j.rarity===r&&j.cond(p));
+    if(c.length) return c[c.length-1];
+  }
+  return JOBS[0];
+}
+
+function checkJokeJob(oldCount, newCount){
+  for(const j of JOKE_JOBS){
+    if(oldCount < j.milestone && newCount >= j.milestone) return j;
+  }
+  return null;
+}
+
+const PARAM_COLORS={知識力:'#00b8f8',感受力:'#f85858',探究力:'#f8f800',世界力:'#00d800',創造力:'#d860f8'};
+const RARITY_MAP={normal:['つうじょう','rarity-normal'],rare:['レア','rarity-rare'],super:['ちょうレア','rarity-super'],legend:['でんせつ','rarity-legend']};
+const GENRE_ICONS={'人文・学術':'📚','ビジネス・自己啓発':'💼','科学・技術':'🔬','文芸・小説':'📖','詩・エッセイ':'✒️','恋愛・ロマンス':'💌','ミステリー・SF':'🔍','ファンタジー・冒険':'⚔️','芸術・デザイン':'🎨','歴史・時代小説':'🏯','歴史・地理':'🗺️','旅行・紀行':'✈️','その他':'📗'};
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Tabs ──
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['history','character','titles'][i]===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='character') updateCharacter();
+  if(tab==='titles') renderTitles();
+}
+
+// ── Titles panel ──
+function renderTitles(){
+  const unlocked=new Set(getUnlockedTitles().map(t=>t.id));
+  const el=document.getElementById('titles-grid');
+  el.innerHTML='<div class="titles-grid">'+ALL_TITLES.map(t=>`
+    <div class="title-card ${unlocked.has(t.id)?'unlocked':''}">
+      <div class="title-icon">${unlocked.has(t.id)?t.icon:'？'}</div>
+      <div style="margin-bottom:4px"><span class="title-badge ${t.badge}">${t.badge==='tb-book'?'さっすう':t.badge==='tb-page'?'ページ':t.badge==='tb-genre'?'ジャンル':'とくしゅ'}</span></div>
+      <div class="title-name">${unlocked.has(t.id)?t.name:'???'}</div>
+      <div class="title-cond">${unlocked.has(t.id)?'かいじょ済み':t.hint}</div>
+    </div>`).join('')+'</div>';
+}
+
+// ── Search ──
+let searchTimer=null;
+function onSearchInput(){
+  clearTimeout(searchTimer);
+  const v=document.getElementById('search-input').value.trim();
+  if(!v){hideResults();return;}
+  searchTimer=setTimeout(searchBooks,700);
+}
+
+async function searchBooks(){
+  const q=document.getElementById('search-input').value.trim();
+  if(!q) return;
+  const sr=document.getElementById('search-results');
+  sr.style.display='block';
+  sr.innerHTML='<div style="padding:10px 14px;font-size:13px;color:#888">けんさく中<span class="loading-inline">...</span></div>';
+  try{
+    const res=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=7&key=AIzaSyAEKoUa0pNBiqUOcyjDYZyAwB4RkoQJZ04`);
+    const data=await res.json();
+    if(!data.items||!data.items.length){
+      sr.innerHTML='<div class="search-result-item" onclick="showManual()">みつかりませんでした ─ てどうにゅうりょく</div>';
+      return;
+    }
+    sr.innerHTML=data.items.map(item=>{
+      const v=item.volumeInfo;
+      const obj={title:v.title||'',author:(v.authors||[]).join(', '),pages:v.pageCount||0,cats:v.categories||[]};
+      return `<div class="search-result-item" onclick='selectBookDirect(${JSON.stringify(obj)})'>
+        ${esc(obj.title)}
+        <div class="sri-sub">${esc(obj.author)}${obj.pages?' · '+obj.pages+'p':''}</div>
+      </div>`;
+    }).join('')+
+    '<div class="search-result-item" onclick="showManual()" style="border-top:1px solid #5a3000;color:#888">てどうにゅうりょくする</div>';
+  }catch(e){
+    sr.innerHTML='<div class="search-result-item" onclick="showManual()">てどうにゅうりょくする</div>';
+  }
+}
+
+function selectBookDirect(info){
+  hideResults();
+  document.getElementById('f-title').value=info.title;
+  document.getElementById('f-author').value=info.author;
+  if(info.pages>0) document.getElementById('f-pages').value=info.pages;
+  document.getElementById('f-genre').value=mapCat(info.cats);
+  document.getElementById('book-info-card').classList.add('visible');
+}
+
+function mapCat(cats){
+  const s=(cats||[]).join(' ').toLowerCase();
+  if(s.includes('mystery')||s.includes('thriller')) return 'ミステリー・SF';
+  if(s.includes('science fiction')||s.includes(' sf')) return 'ミステリー・SF';
+  if(s.includes('fantasy')||s.includes('adventure')) return 'ファンタジー・冒険';
+  if(s.includes('history')&&s.includes('fiction')) return '歴史・時代小説';
+  if(s.includes('history')) return '歴史・地理';
+  if(s.includes('travel')) return '旅行・紀行';
+  if(s.includes('poetry')||s.includes('essay')) return '詩・エッセイ';
+  if(s.includes('art')||s.includes('design')) return '芸術・デザイン';
+  if(s.includes('business')||s.includes('self-help')) return 'ビジネス・自己啓発';
+  if(s.includes('science')||s.includes('technology')) return '科学・技術';
+  if(s.includes('romance')||s.includes('love')) return '恋愛・ロマンス';
+  if(s.includes('fiction')||s.includes('novel')||s.includes('literary')) return '文芸・小説';
+  return 'その他';
+}
+
+function hideResults(){document.getElementById('search-results').style.display='none';}
+
+function mapCat(cats){
+  const s=(cats||[]).join(' ').toLowerCase();
+  if(s.includes('mystery')||s.includes('thriller')) return 'ミステリー・SF';
+  if(s.includes('science fiction')||s.includes(' sf')) return 'ミステリー・SF';
+  if(s.includes('fantasy')||s.includes('adventure')) return 'ファンタジー・冒険';
+  if(s.includes('history')&&s.includes('fiction')) return '歴史・時代小説';
+  if(s.includes('history')) return '歴史・地理';
+  if(s.includes('travel')) return '旅行・紀行';
+  if(s.includes('poetry')||s.includes('essay')) return '詩・エッセイ';
+  if(s.includes('art')||s.includes('design')) return '芸術・デザイン';
+  if(s.includes('business')||s.includes('self-help')) return 'ビジネス・自己啓発';
+  if(s.includes('science')||s.includes('technology')) return '科学・技術';
+  if(s.includes('romance')||s.includes('love')) return '恋愛・ロマンス';
+  if(s.includes('fiction')||s.includes('novel')||s.includes('literary')) return '文芸・小説';
+  return 'その他';
+}
+
+
+
+function showManual(){
+  hideResults();
+  const t=document.getElementById('search-input').value.trim();
+  document.getElementById('f-title').value=t;
+  document.getElementById('f-author').value='';
+  document.getElementById('f-pages').value='';
+  document.getElementById('book-info-card').classList.add('visible');
+}
+
+function cancelAdd(){
+  document.getElementById('book-info-card').classList.remove('visible');
+  document.getElementById('search-input').value='';
+  hideResults();
+}
+
+// ── Add / Delete ──
+function addBook(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){document.getElementById('f-title').focus();return;}
+  const pages=parseInt(document.getElementById('f-pages').value)||200;
+  const genre=document.getElementById('f-genre').value;
+  const author=document.getElementById('f-author').value.trim();
+  const date=document.getElementById('f-date').value||new Date().toISOString().split('T')[0];
+
+  const oldExp=books.reduce((s,b)=>s+(b.pages||0),0);
+  const oldLv=calcLevel(oldExp).lv;
+  const oldJob=determineJob(calcParams());
+  const oldCount=books.length;
+  const prevTitles=getUnlockedTitles();
+
+  books.unshift({id:Date.now().toString(),title,author,genre,pages,date});
+  save();
+  renderHistory();
+
+  const newExp=books.reduce((s,b)=>s+(b.pages||0),0);
+  const newLv=calcLevel(newExp).lv;
+  const newJob=determineJob(calcParams());
+  const newCount=books.length;
+  const jokeJob=checkJokeJob(oldCount,newCount);
+  const newTitles=checkNewTitles(prevTitles);
+
+  cancelAdd();
+
+  // priority: joke job > level/job change > new titles
+  if(jokeJob){
+    showJokeModal(jokeJob);
+  } else if(newLv>oldLv||newJob.name!==oldJob.name){
+    showModal(newLv>oldLv,newLv,newJob,newJob.name!==oldJob.name);
+  } else if(newTitles.length>0){
+    showTitleModal(newTitles[0]);
+  }
+}
+
+function deleteBook(id){
+  if(!confirm('このきろくをさくじょしますか？')) return;
+  books=books.filter(b=>b.id!==id);
+  save();
+  renderHistory();
+}
+
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(books));}
+
+// ── Render History ──
+function renderHistory(sort='newest'){
+  document.getElementById('history-count').textContent=books.length+'さつのきろく';
+  document.getElementById('h-books').textContent=books.length;
+  document.getElementById('h-pages').textContent=books.reduce((s,b)=>s+(b.pages||0),0).toLocaleString();
+
+  let s=[...books];
+  if(sort==='newest') s.sort((a,b)=>b.date.localeCompare(a.date));
+  else if(sort==='oldest') s.sort((a,b)=>a.date.localeCompare(b.date));
+  else s.sort((a,b)=>(b.pages||0)-(a.pages||0));
+
+  const el=document.getElementById('history-list');
+  if(!s.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📖</div><div class="empty-text">まだほんがとうろくされていません</div><div style="font-size:13px;color:#666;margin-top:8px">さいしょの1さつをとうろくしてぼうけんをはじめよう！</div></div>';
+    return;
+  }
+  el.innerHTML=s.map(b=>`
+    <div class="book-card">
+      <div class="book-icon">${GENRE_ICONS[b.genre]||'📗'}</div>
+      <div class="book-main">
+        <div class="book-title-row">
+          <span class="book-title">${esc(b.title)}</span>
+          <span class="genre-badge">${esc(b.genre)}</span>
+        </div>
+        ${b.author?`<div class="book-author">${esc(b.author)}</div>`:''}
+        <div class="book-footer">
+          <span class="book-stat"><span>${b.date}</span></span>
+          <span class="book-stat"><span>${(b.pages||0).toLocaleString()}</span>ページ</span>
+          <span class="exp-badge">EXP +${(b.pages||0).toLocaleString()}</span>
+          <button class="del-btn" onclick="deleteBook('${b.id}')" title="さくじょ">［×］</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Character ──
+function updateCharacter(){
+  const exp=books.reduce((s,b)=>s+(b.pages||0),0);
+  const {lv,rem,req}=calcLevel(exp);
+  const p=calcParams();
+  const job=determineJob(p);
+
+  document.getElementById('char-lv').textContent=lv;
+  document.getElementById('exp-bar').style.width=Math.min(100,Math.round(rem/req*100))+'%';
+  document.getElementById('exp-text').textContent=rem.toLocaleString()+' / '+req.toLocaleString()+' EXP';
+  document.getElementById('total-exp').textContent=exp.toLocaleString()+' EXP';
+  document.getElementById('job-name').textContent=job.name;
+  document.getElementById('job-desc').textContent=job.desc;
+  const re=document.getElementById('job-rarity');
+  re.textContent=RARITY_MAP[job.rarity][0];
+  re.className='job-rarity '+RARITY_MAP[job.rarity][1];
+
+  document.getElementById('params-list').innerHTML=Object.entries(p).map(([k,v])=>`
+    <div class="param-row">
+      <span class="param-name">${k}</span>
+      <span class="param-val" style="color:${PARAM_COLORS[k]}">${v}</span>
+      <div class="param-bar-wrap"><div class="param-bar" style="width:${Math.min(100,v/150*100).toFixed(1)}%;background:${PARAM_COLORS[k]}"></div></div>
+    </div>`).join('');
+
+  const gc={};
+  for(const b of books) gc[b.genre]=(gc[b.genre]||0)+1;
+  const tg=Object.entries(gc).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-box"><div class="stat-val">${books.length}</div><div class="stat-label">そうさっすう</div></div>
+    <div class="stat-box"><div class="stat-val">${exp.toLocaleString()}</div><div class="stat-label">そうページすう</div></div>
+    <div class="stat-box"><div class="stat-val" style="font-size:13px">${tg?tg[0]:'—'}</div><div class="stat-label">さいたジャンル</div></div>`;
+}
+
+// ── Modal ──
+function showModal(lvUp,lv,job,jobChanged){
+  const rl={normal:'つうじょう',rare:'レア',super:'ちょうレア',legend:'でんせつ'};
+  if(lvUp&&jobChanged){
+    document.getElementById('modal-icon').textContent='★';
+    document.getElementById('modal-title').textContent='レベルアップ！しょくぎょうが かわった！';
+    document.getElementById('modal-sub').textContent='Lv '+lv+' に なった！\nどくしょの けいこうが しょくぎょうを かえた。';
+    document.getElementById('modal-job').textContent=job.name;
+  } else if(lvUp){
+    document.getElementById('modal-icon').textContent='↑';
+    document.getElementById('modal-title').textContent='レベルアップ！';
+    document.getElementById('modal-sub').textContent='Lv '+lv+' に なった！\nどくしょを つづけて ちからを たかめよう。';
+    document.getElementById('modal-job').textContent='';
+  } else {
+    const icons={normal:'◇',rare:'◆',super:'★',legend:'✦'};
+    document.getElementById('modal-icon').textContent=icons[job.rarity]||'◇';
+    document.getElementById('modal-title').textContent='しょくぎょうが かわった！';
+    document.getElementById('modal-sub').textContent='【'+rl[job.rarity]+'】\n'+job.desc;
+    document.getElementById('modal-job').textContent=job.name;
+  }
+  document.getElementById('modal').classList.add('show');
+}
+function showJokeModal(j){
+  document.getElementById('modal').classList.add('show','modal-joke');
+  document.getElementById('modal-icon').textContent='🎭';
+  document.getElementById('modal-title').textContent='とくべつな しょくぎょうが あらわれた！';
+  document.getElementById('modal-sub').textContent=j.desc;
+  document.getElementById('modal-job').textContent=j.name;
+}
+
+function showTitleModal(t){
+  document.getElementById('modal').classList.add('show');
+  document.getElementById('modal').classList.remove('modal-joke');
+  document.getElementById('modal-icon').textContent=t.icon;
+  document.getElementById('modal-title').textContent='しょうごう かいじょ！';
+  document.getElementById('modal-sub').textContent='あたらしい しょうごうを てにいれた！';
+  document.getElementById('modal-job').textContent=t.name;
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('show','modal-joke');
+}
+
+// ── Init ──
+document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+document.addEventListener('click',e=>{if(!e.target.closest('.search-row'))hideResults();});
+renderHistory();
+</script>
+</body>
+</html>
