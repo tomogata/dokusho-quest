@@ -2,7 +2,7 @@
 
 読書記録をRPG風に楽しむWebアプリです。
 
-🌐 **公開URL**: https://dokusyo-quest.netlify.app
+🌐 **公開URL**: https://dokusho-quest.netlify.app
 
 ---
 
@@ -45,11 +45,11 @@ Netlifyで公開されたバージョンはGoogle Books APIを使用していま
 
 ## 今後やりたいこと
 
-- [ ] エクスポート／インポート機能（データの持ち運び）
+- [ ] 読了時にXへ投稿できるボタンの追加（ワンクリックで投稿画面を開く）
 - [ ] PWA化（スマホのホーム画面に追加できるように）
 - [ ] クラウド保存対応（複数デバイスで同じデータを使えるように）
 - [ ] ジャンル判定精度の改善
-- [ ] GitHubとNetlifyの自動連携設定
+- [x] GitHubとNetlifyの自動連携設定
 
 ---
 
