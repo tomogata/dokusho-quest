@@ -672,15 +672,18 @@ header {
 
 <!-- Level Up Modal -->
 <div class="modal-overlay" id="modal" onclick="closeModal()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-icon" id="modal-icon">★</div>
-    <div class="modal-title" id="modal-title"></div>
-    <div class="modal-sub" id="modal-sub"></div>
-    <div class="modal-job" id="modal-job"></div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px" onclick="event.stopPropagation()">
+    <div class="modal">
+      <div class="modal-icon" id="modal-icon">★</div>
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-sub" id="modal-sub"></div>
+      <div class="modal-job" id="modal-job"></div>
       <button class="dq-btn dq-btn-primary" onclick="closeModal()">つづける</button>
-      <button class="dq-btn" id="tweet-btn" onclick="postToX()" style="display:none">𝕏 に投稿する</button>
     </div>
+    <button class="dq-btn" id="tweet-btn" onclick="postToX()"
+      style="display:none;font-size:14px;padding:10px 24px;border-color:#1d9bf0;color:#1d9bf0">
+      𝕏 に投稿する
+    </button>
   </div>
 </div>
 
