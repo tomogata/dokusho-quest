@@ -549,6 +549,13 @@ header {
     <button class="tab" onclick="switchTab('character')">ぼうけんしゃ</button>
     <button class="tab" onclick="switchTab('titles')">しょうごう図鑑</button>
   </div>
+  <div style="text-align:right;margin-bottom:12px">
+    <a href="https://github.com/tomogata/dokusho-quest#使い方" target="_blank"
+      style="font-family:var(--dot);font-size:12px;color:var(--gray2);border:1px solid var(--win-border);padding:4px 10px;text-decoration:none;display:inline-block;"
+      onmouseover="this.style.color='var(--gold2)'" onmouseout="this.style.color='var(--gray2)'">
+      ？ つかいかた
+    </a>
+  </div>
 
   <!-- HISTORY PANEL -->
   <div class="panel active" id="panel-history">
@@ -670,7 +677,10 @@ header {
     <div class="modal-title" id="modal-title"></div>
     <div class="modal-sub" id="modal-sub"></div>
     <div class="modal-job" id="modal-job"></div>
-    <button class="dq-btn dq-btn-primary" onclick="closeModal()">つづける</button>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+      <button class="dq-btn dq-btn-primary" onclick="closeModal()">つづける</button>
+      <button class="dq-btn" id="tweet-btn" onclick="postToX()" style="display:none">𝕏 に投稿する</button>
+    </div>
   </div>
 </div>
 
@@ -1052,46 +1062,73 @@ function updateCharacter(){
 }
 
 // ── Modal ──
+let currentTweetText = '';
+
+function setTweetBtn(text){
+  currentTweetText = text;
+  document.getElementById('tweet-btn').style.display = 'inline-block';
+}
+
+function postToX(){
+  const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(currentTweetText);
+  window.open(url, '_blank');
+}
+
 function showModal(lvUp,lv,job,jobChanged){
   const rl={normal:'つうじょう',rare:'レア',super:'ちょうレア',legend:'でんせつ'};
+  const lastBook = books[0] || {};
+  const title = lastBook.title || '';
+
   if(lvUp&&jobChanged){
     document.getElementById('modal-icon').textContent='★';
     document.getElementById('modal-title').textContent='レベルアップ！しょくぎょうが かわった！';
     document.getElementById('modal-sub').textContent='Lv '+lv+' に なった！\nどくしょの けいこうが しょくぎょうを かえた。';
     document.getElementById('modal-job').textContent=job.name;
+    setTweetBtn(`📖「${title}」読了！\nLv.${lv-1} → Lv.${lv} にアップ！\n職業：${job.name}\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
   } else if(lvUp){
     document.getElementById('modal-icon').textContent='↑';
     document.getElementById('modal-title').textContent='レベルアップ！';
     document.getElementById('modal-sub').textContent='Lv '+lv+' に なった！\nどくしょを つづけて ちからを たかめよう。';
     document.getElementById('modal-job').textContent='';
+    setTweetBtn(`📖「${title}」読了！\nLv.${lv-1} → Lv.${lv} にアップ！\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
   } else {
     const icons={normal:'◇',rare:'◆',super:'★',legend:'✦'};
     document.getElementById('modal-icon').textContent=icons[job.rarity]||'◇';
     document.getElementById('modal-title').textContent='しょくぎょうが かわった！';
     document.getElementById('modal-sub').textContent='【'+rl[job.rarity]+'】\n'+job.desc;
     document.getElementById('modal-job').textContent=job.name;
+    setTweetBtn(`📖「${title}」読了！\n職業が「${job.name}」に変わった！【${rl[job.rarity]}】\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
   }
   document.getElementById('modal').classList.add('show');
 }
+
 function showJokeModal(j){
+  const lastBook = books[0] || {};
+  const title = lastBook.title || '';
   document.getElementById('modal').classList.add('show','modal-joke');
   document.getElementById('modal-icon').textContent='🎭';
   document.getElementById('modal-title').textContent='とくべつな しょくぎょうが あらわれた！';
   document.getElementById('modal-sub').textContent=j.desc;
   document.getElementById('modal-job').textContent=j.name;
+  setTweetBtn(`📖「${title}」読了！\nとくべつな職業「${j.name}」があらわれた！🎭\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
 }
 
 function showTitleModal(t){
+  const lastBook = books[0] || {};
+  const title = lastBook.title || '';
   document.getElementById('modal').classList.add('show');
   document.getElementById('modal').classList.remove('modal-joke');
   document.getElementById('modal-icon').textContent=t.icon;
   document.getElementById('modal-title').textContent='しょうごう かいじょ！';
   document.getElementById('modal-sub').textContent='あたらしい しょうごうを てにいれた！';
   document.getElementById('modal-job').textContent=t.name;
+  setTweetBtn(`📖「${title}」読了！\n称号「${t.name}」${t.icon}を獲得！\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
 }
 
 function closeModal(){
   document.getElementById('modal').classList.remove('show','modal-joke');
+  document.getElementById('tweet-btn').style.display='none';
+  currentTweetText='';
 }
 
 // ── Init ──
