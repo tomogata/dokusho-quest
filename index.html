@@ -678,12 +678,14 @@ header {
       <div class="modal-title" id="modal-title"></div>
       <div class="modal-sub" id="modal-sub"></div>
       <div class="modal-job" id="modal-job"></div>
-      <button class="dq-btn dq-btn-primary" onclick="closeModal()">つづける</button>
     </div>
-    <button class="dq-btn" id="tweet-btn" onclick="postToX()"
-      style="display:none;font-size:14px;padding:10px 24px;border-color:#1d9bf0;color:#1d9bf0">
-      𝕏 に投稿する
-    </button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <button class="dq-btn dq-btn-primary" onclick="closeModal()">つづける</button>
+      <button class="dq-btn" id="tweet-btn" onclick="postToX()"
+        style="display:none;border-color:#1d9bf0;color:#1d9bf0">
+        𝕏 に投稿する
+      </button>
+    </div>
   </div>
 </div>
 
