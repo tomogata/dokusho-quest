@@ -869,13 +869,41 @@ async function searchBooks(){
   sr.style.display='block';
   sr.innerHTML='<div style="padding:10px 14px;font-size:13px;color:#888">けんさく中<span class="loading-inline">...</span></div>';
   try{
-    const res=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=7&key=AIzaSyAEKoUa0pNBiqUOcyjDYZyAwB4RkoQJZ04`);
-    const data=await res.json();
-    if(!data.items||!data.items.length){
+    const apiKey='AIzaSyAEKoUa0pNBiqUOcyjDYZyAwB4RkoQJZ04';
+    // intitle: でタイトル一致を優先しつつ、通常検索もあわせて取得して結合する
+    const [res1, res2] = await Promise.all([
+      fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent('intitle:'+q)}&maxResults=10&key=${apiKey}`),
+      fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10&key=${apiKey}`)
+    ]);
+    const [data1, data2] = await Promise.all([res1.json(), res2.json()]);
+
+    const items1 = data1.items || [];
+    const items2 = data2.items || [];
+
+    // intitle結果を優先し、通常検索からは重複しないものだけ追加
+    const seen = new Set(items1.map(it => it.id));
+    const merged = [...items1, ...items2.filter(it => !seen.has(it.id))];
+
+    // 完全一致タイトルを最優先で並べ替え
+    const qLower = q.toLowerCase();
+    merged.sort((a,b) => {
+      const aTitle=(a.volumeInfo.title||'').toLowerCase();
+      const bTitle=(b.volumeInfo.title||'').toLowerCase();
+      const aExact = aTitle === qLower ? 0 : 1;
+      const bExact = bTitle === qLower ? 0 : 1;
+      if(aExact !== bExact) return aExact - bExact;
+      const aStarts = aTitle.startsWith(qLower) ? 0 : 1;
+      const bStarts = bTitle.startsWith(qLower) ? 0 : 1;
+      return aStarts - bStarts;
+    });
+
+    const results = merged.slice(0, 8);
+
+    if(!results.length){
       sr.innerHTML='<div class="search-result-item" onclick="showManual()">みつかりませんでした ─ てどうにゅうりょく</div>';
       return;
     }
-    sr.innerHTML=data.items.map(item=>{
+    sr.innerHTML=results.map(item=>{
       const v=item.volumeInfo;
       const obj={title:v.title||'',author:(v.authors||[]).join(', '),pages:v.pageCount||0,cats:v.categories||[]};
       return `<div class="search-result-item" onclick='selectBookDirect(${JSON.stringify(obj)})'>
