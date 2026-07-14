@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>読書クエスト</title>
 <link rel="icon" href="favicon.png" type="image/png">
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-CMTNG144GR"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-CMTNG144GR');
+</script>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -617,11 +625,16 @@ header {
 
     <div class="history-header">
       <div class="history-count" id="history-count">0さつのきろく</div>
-      <select class="sort-select" onchange="renderHistory(this.value)">
-        <option value="newest">あたらしい順</option>
-        <option value="oldest">ふるい順</option>
-        <option value="pages">ページすう順</option>
-      </select>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="dq-btn" onclick="exportData()" style="font-size:11px;padding:5px 10px">↓ ほぞん</button>
+        <button class="dq-btn" onclick="document.getElementById('import-input').click()" style="font-size:11px;padding:5px 10px">↑ よみこむ</button>
+        <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
+        <select class="sort-select" onchange="renderHistory(this.value)">
+          <option value="newest">あたらしい順</option>
+          <option value="oldest">ふるい順</option>
+          <option value="pages">ページすう順</option>
+        </select>
+      </div>
     </div>
     <div id="history-list"></div>
   </div>
@@ -752,7 +765,32 @@ const JOBS = [
   {name:'星読みの哲人',   rarity:'rare', desc:'知識・感受・世界の三つを携え、宇宙の理を読み解く哲学者。',           cond:p=>p.知識力>=25&&p.感受力>=25&&p.世界力>=25},
   {name:'蒼穹の冒険譚師', rarity:'rare', desc:'ファンタジーと旅を愛し、天空を舞台に物語を紡ぐ者。',                 cond:p=>p.創造力>=30&&p.世界力>=25&&diff(p,'創造力','世界力')<15},
   {name:'科学幻想家',     rarity:'rare', desc:'科学の知識とSFの夢想が交差する境界に立つ者。',                       cond:p=>p.知識力>=25&&p.探究力>=25&&p.創造力>=20},
-  // 超レア
+  // レア（マンガ・アニメオマージュ）
+  {name:'錬成師',         rarity:'rare', desc:'知識と創造の力で、この世の理を組み替える者。等価交換が信条。',             cond:p=>p.知識力>=25&&p.創造力>=25&&diff(p,'知識力','創造力')<12},
+  {name:'写本の継承者',   rarity:'rare', desc:'世界の記憶と知識を体に宿し、次の世代へと継ぎ足す運命の担い手。',           cond:p=>p.世界力>=25&&p.知識力>=25&&diff(p,'世界力','知識力')<12},
+  {name:'水影の剣士',     rarity:'rare', desc:'感受と探究が研ぎ澄まされ、静水の如く鋭い洞察で真実を斬る者。',             cond:p=>p.感受力>=25&&p.探究力>=25&&diff(p,'感受力','探究力')<12},
+  {name:'呪術師',         rarity:'rare', desc:'探究と創造の呪縛を自在に操り、言葉という呪いで世界を縛る者。',             cond:p=>p.探究力>=25&&p.創造力>=25&&diff(p,'探究力','創造力')<12},
+  {name:'北斗の継承者',   rarity:'rare', desc:'知識・探究・世界力を兼ね備え、乱世の中に秘伝の道を歩む孤高の者。',         cond:p=>p.知識力>=20&&p.探究力>=20&&p.世界力>=20},
+  {name:'超人番付師',     rarity:'rare', desc:'感受と創造の力で仲間の強さを見抜き、伝説の番付に名を刻む者。',             cond:p=>p.感受力>=25&&p.創造力>=20&&diff(p,'感受力','創造力')<15},
+  {name:'聖域の守護者',   rarity:'rare', desc:'感受と世界の力で小宇宙を燃やし、神話の聖域を守り続ける戦士。',             cond:p=>p.感受力>=25&&p.世界力>=25&&diff(p,'感受力','世界力')<12},
+  {name:'奇跡の司令塔',   rarity:'rare', desc:'感受・世界・創造の三力で仲間を導き、不可能を可能にする読書の天才。',       cond:p=>p.感受力>=20&&p.世界力>=20&&p.創造力>=20},
+  {name:'死神代行',       rarity:'rare', desc:'探究と感受の力で見えないものを見通し、魂の真実に触れる異端の使者。',       cond:p=>p.探究力>=25&&p.感受力>=20&&diff(p,'探究力','感受力')<15},
+  {name:'呪力の解放者',   rarity:'rare', desc:'探究と創造の呪縛をさらに深め、言葉という呪いを自在に解放する覚醒した術者。', cond:p=>p.探究力>=28&&p.創造力>=28&&p.知識力>=20},
+  {name:'超常現象の観測者',rarity:'rare', desc:'探究と感受と創造が交わる者。オカルトと科学の狭間で真実を見つめ続ける異才。', cond:p=>p.探究力>=22&&p.感受力>=22&&p.創造力>=22},
+  {name:'後宮の薬師',     rarity:'rare', desc:'知識と探究の力で後宮の謎を解き明かす。観察眼と薬学の知識が武器の知性派。',   cond:p=>p.知識力>=28&&p.探究力>=25&&p.感受力>=18},
+  // 超レア（マンガ・アニメオマージュ）
+  {name:'気功の覚醒者',   rarity:'super', desc:'全パラメータが覚醒し、読書という修行で無限の力を引き出した伝説の戦士。', cond:p=>Object.values(p).every(v=>v>=35)},
+  {name:'王の器',         rarity:'super', desc:'全ての力が高水準に達し、仲間を率いて頂点を目指す、生まれながらの覇者。', cond:p=>Object.values(p).every(v=>v>=40)&&Math.max(...Object.values(p))-Math.min(...Object.values(p))<20},
+  {name:'海原の航海士',   rarity:'super', desc:'世界と創造の力が最高水準に達し、未知の大海原へ仲間と漕ぎ出す自由の者。', cond:p=>p.世界力>=55&&p.創造力>=55&&diff(p,'世界力','創造力')<15},
+  // レア（2024-2025人気作オマージュ）
+  {name:'後宮の薬師',     rarity:'rare',  desc:'知識と探究の力で宮廷の謎を解き明かす、薬学の知恵を持つ静かなる観察者。',     cond:p=>p.知識力>=25&&p.探究力>=25&&p.感受力>=15},
+  {name:'超常現象の観測者',rarity:'rare', desc:'探究と創造の眼で、この世の不思議な現象を冷静に記録し続ける異端の研究者。',   cond:p=>p.探究力>=25&&p.創造力>=20&&p.感受力>=15},
+  // 超レア（2024-2025人気作オマージュ）
+  {name:'無限の呼吸者',   rarity:'super', desc:'感受・探究・創造の三力が極まり、読書という修行で無限の呼吸を体得した者。',   cond:p=>p.感受力>=50&&p.探究力>=45&&p.創造力>=45},
+  {name:'無個性の覚醒者', rarity:'super', desc:'最初は何も持たなかったが、読書という努力でついに全てのパラメータを覚醒させた者。', cond:p=>Object.values(p).every(v=>v>=42)&&Math.min(...Object.values(p))>=42},
+  // 伝説（2024-2025人気作オマージュ）
+  {name:'最終章の証人',   rarity:'legend',desc:'全ての物語の最終章に立ち会い、その結末を見届けた唯一無二の読書の伝説。百冊を超え、全てのパラメータが極まった者だけが辿り着く境地。', cond:p=>{const exp=books.reduce((s,b)=>s+(b.pages||0),0);const {lv}=calcLevel(exp);return books.length>=80&&lv>=35&&Math.min(...Object.values(p))>=55;}},
+  // 超レア（既存）
   {name:'虚実の書記官',   rarity:'super', desc:'知識・探究・創造の三力が結晶化した、現実と幻想の狭間に立つ筆録者。', cond:p=>p.知識力>=50&&p.探究力>=50&&p.創造力>=50},
   {name:'時詠みの旅人',   rarity:'super', desc:'世界・感受・創造が高みに達した、時空を越えて物語を詠む放浪者。',     cond:p=>p.世界力>=50&&p.感受力>=50&&p.創造力>=50},
   {name:'カオスの語り部', rarity:'super', desc:'五つの力が均等に高まった混沌の体現者。何者でもあり、何者でもない。', cond:p=>{const v=Object.values(p),a=v.reduce((s,x)=>s+x,0)/5;return a>=40&&Math.max(...v)-Math.min(...v)<15;}},
@@ -767,7 +805,9 @@ const JOKE_JOBS = [
   {name:'積読公爵',      desc:'読んでいない本が増えれば増えるほど威厳が増す謎の貴族。',   milestone:10},
   {name:'あらすじ侯爵',  desc:'本を読まずともあらすじだけで会話を乗り切る達人。',           milestone:20},
   {name:'栞忘れ騎士団',  desc:'読みかけの本に栞を挟み忘れ続ける呪われた騎士たち。',         milestone:30},
+  {name:'異世界転生者',  desc:'いつの間にか読書という異世界に転生していた。チートスキルは速読。', milestone:40},
   {name:'カバー折り魔王', desc:'文庫本のカバーを折ることで魔力を得る闇の読書家。',           milestone:50},
+  {name:'無敵の一般人',  desc:'元・最強の読書家。今は穏やかに本を読むだけのはずが、なぜか周囲がざわつく。', milestone:60},
   {name:'帯コレクター将軍',desc:'本の帯だけを集め続ける謎の将軍。読むとは何か。',           milestone:75},
   {name:'深夜活字中毒者', desc:'「あと1ページだけ」と言い続けて朝を迎える者。',             milestone:100},
 ];
@@ -787,9 +827,15 @@ const ALL_TITLES = [
   {id:'g3',    icon:'🌈', name:'ジャンル探検家',   badge:'tb-genre',  cond:()=>uniqueGenres()>=3,        hint:'3しゅるい以上のジャンルをよむ'},
   {id:'g6',    icon:'🎭', name:'万能読書家',        badge:'tb-genre',  cond:()=>uniqueGenres()>=6,        hint:'6しゅるい以上のジャンルをよむ'},
   {id:'g_all', icon:'🌐', name:'全ジャンル制覇',   badge:'tb-genre',  cond:()=>uniqueGenres()>=12,       hint:'すべてのジャンルをよむ'},
-  {id:'sp_fat',icon:'🐋', name:'長編の覇者',       badge:'tb-special',cond:()=>books.some(b=>(b.pages||0)>=500), hint:'500ページいじょうの本をよむ'},
-  {id:'sp_fast',icon:'⚡',name:'速読の使徒',        badge:'tb-special',cond:()=>booksInMonth()>=3,        hint:'1ヶ月に3さつよむ'},
-  {id:'sp_yr', icon:'🗓️', name:'年間読書家',        badge:'tb-special',cond:()=>booksInYear()>=12,        hint:'1ねんで12さつよむ'},
+  {id:'sp_fat', icon:'🐋', name:'長編の覇者',       badge:'tb-special',cond:()=>books.some(b=>(b.pages||0)>=500), hint:'500ページいじょうの本をよむ'},
+  {id:'sp_fast',icon:'⚡', name:'速読の使徒',        badge:'tb-special',cond:()=>booksInMonth()>=3,        hint:'1ヶ月に3さつよむ'},
+  {id:'sp_yr',  icon:'🗓️', name:'年間読書家',        badge:'tb-special',cond:()=>booksInYear()>=12,        hint:'1ねんで12さつよむ'},
+  {id:'sp_5mo', icon:'🔥', name:'全集中の読書家',    badge:'tb-special',cond:()=>booksInMonth()>=5,        hint:'1ヶ月に5さつよむ'},
+  {id:'sp_lv20',icon:'💥', name:'限界を超えた者',    badge:'tb-special',cond:()=>calcLevel(books.reduce((s,b)=>s+(b.pages||0),0)).lv>=20, hint:'レベル20にとうたつ'},
+  {id:'sp_g10', icon:'⚽', name:'ボールは友達',      badge:'tb-genre',  cond:()=>uniqueGenres()>=10,       hint:'10しゅるい以上のジャンルをよむ'},
+  {id:'sp_p500',icon:'💪', name:'超人強度の読書家',  badge:'tb-page',   cond:()=>totalPages()>=500,        hint:'そうページ 500 とっぱ'},
+  {id:'sp_cosm',icon:'🌟', name:'小宇宙の覚醒者',    badge:'tb-special',cond:()=>totalPages()>=10000,      hint:'そうページ 10,000 とっぱ（べつルートで かいじょ）'},
+  {id:'sp_nev', icon:'👊', name:'諦めない者',        badge:'tb-special',cond:()=>books.length>=50,         hint:'50さつ よみおわる'},
 ];
 
 function totalPages(){return books.reduce((s,b)=>s+(b.pages||0),0);}
@@ -1162,6 +1208,48 @@ function closeModal(){
   document.getElementById('modal').classList.remove('show','modal-joke');
   document.getElementById('tweet-btn').style.display='none';
   currentTweetText='';
+}
+
+// ── Export / Import ──
+function exportData(){
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    books: books
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '読書クエスト_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const imported = data.books || data; // バージョン1形式とそれ以前の両対応
+      if(!Array.isArray(imported)) throw new Error('invalid');
+      if(!confirm(`${imported.length}さつのきろくをよみこみます。\n現在のきろくはそのまま残ります。よろしいですか？`)) return;
+      // 重複しないものだけ追加（idで判定）
+      const existingIds = new Set(books.map(b => b.id));
+      const newBooks = imported.filter(b => !existingIds.has(b.id));
+      books = [...books, ...newBooks];
+      books.sort((a,b) => b.date.localeCompare(a.date));
+      save();
+      renderHistory();
+      alert(`${newBooks.length}さつのきろくをよみこみました！`);
+    } catch(err) {
+      alert('よみこみに失敗しました。ファイルを確認してください。');
+    }
+    event.target.value = ''; // 同じファイルを再度読み込めるようにリセット
+  };
+  reader.readAsText(file);
 }
 
 // ── Init ──
