@@ -553,8 +553,8 @@ header {
   </header>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('history')">どくしょきろく</button>
-    <button class="tab" onclick="switchTab('character')">ぼうけんしゃ</button>
+    <button class="tab active" onclick="switchTab('character')">ステータス</button>
+    <button class="tab" onclick="switchTab('history')">どくしょきろく</button>
     <button class="tab" onclick="switchTab('titles')">しょうごう図鑑</button>
   </div>
   <div style="text-align:right;margin-bottom:12px">
@@ -566,7 +566,7 @@ header {
   </div>
 
   <!-- HISTORY PANEL -->
-  <div class="panel active" id="panel-history">
+  <div class="panel" id="panel-history">
     <div class="dq-win">
       <div class="dq-title">ほんをとうろくする</div>
       <div class="search-row">
@@ -640,7 +640,7 @@ header {
   </div>
 
   <!-- CHARACTER PANEL -->
-  <div class="panel" id="panel-character">
+  <div class="panel active" id="panel-character">
     <div class="char-grid">
       <div class="char-card">
         <div class="char-label">しょくぎょう</div>
@@ -879,7 +879,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 // ── Tabs ──
 function switchTab(tab){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['history','character','titles'][i]===tab));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['character','history','titles'][i]===tab));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tab).classList.add('active');
   if(tab==='character') updateCharacter();
@@ -1256,6 +1256,7 @@ function importData(event){
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
 document.addEventListener('click',e=>{if(!e.target.closest('.search-row'))hideResults();});
 renderHistory();
+updateCharacter();
 </script>
 </body>
 </html>
