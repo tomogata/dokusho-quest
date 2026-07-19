@@ -915,7 +915,7 @@ async function searchBooks(){
   sr.style.display='block';
   sr.innerHTML='<div style="padding:10px 14px;font-size:13px;color:#888">けんさく中<span class="loading-inline">...</span></div>';
   try{
-    const apiKey='AIzaSyAEKoUa0pNBiqUOcyjDYZyAwB4RkoQJZ04';
+    const apiKey='AIzaSyDt_Rnk-k0As5c7dn2JeOr1mChxqofp4R0';
     // intitle: でタイトル一致を優先しつつ、通常検索もあわせて取得して結合する
     const [res1, res2] = await Promise.all([
       fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent('intitle:'+q)}&maxResults=10&key=${apiKey}`),
@@ -991,22 +991,6 @@ function mapCat(cats){
 
 function hideResults(){document.getElementById('search-results').style.display='none';}
 
-function mapCat(cats){
-  const s=(cats||[]).join(' ').toLowerCase();
-  if(s.includes('mystery')||s.includes('thriller')) return 'ミステリー・SF';
-  if(s.includes('science fiction')||s.includes(' sf')) return 'ミステリー・SF';
-  if(s.includes('fantasy')||s.includes('adventure')) return 'ファンタジー・冒険';
-  if(s.includes('history')&&s.includes('fiction')) return '歴史・時代小説';
-  if(s.includes('history')) return '歴史・地理';
-  if(s.includes('travel')) return '旅行・紀行';
-  if(s.includes('poetry')||s.includes('essay')) return '詩・エッセイ';
-  if(s.includes('art')||s.includes('design')) return '芸術・デザイン';
-  if(s.includes('business')||s.includes('self-help')) return 'ビジネス・自己啓発';
-  if(s.includes('science')||s.includes('technology')) return '科学・技術';
-  if(s.includes('romance')||s.includes('love')) return '恋愛・ロマンス';
-  if(s.includes('fiction')||s.includes('novel')||s.includes('literary')) return '文芸・小説';
-  return 'その他';
-}
 
 
 
@@ -1026,6 +1010,8 @@ function cancelAdd(){
 }
 
 // ── Add / Delete ──
+let popupQueue = [];
+
 function addBook(){
   const title=document.getElementById('f-title').value.trim();
   if(!title){document.getElementById('f-title').focus();return;}
@@ -1037,6 +1023,7 @@ function addBook(){
   const oldExp=books.reduce((s,b)=>s+(b.pages||0),0);
   const oldLv=calcLevel(oldExp).lv;
   const oldJob=determineJob(calcParams());
+  const oldParams=calcParams();
   const oldCount=books.length;
   const prevTitles=getUnlockedTitles();
 
@@ -1047,20 +1034,31 @@ function addBook(){
   const newExp=books.reduce((s,b)=>s+(b.pages||0),0);
   const newLv=calcLevel(newExp).lv;
   const newJob=determineJob(calcParams());
+  const newParams=calcParams();
   const newCount=books.length;
   const jokeJob=checkJokeJob(oldCount,newCount);
   const newTitles=checkNewTitles(prevTitles);
+  const bookTitle=title;
 
   cancelAdd();
 
-  // priority: joke job > level/job change > new titles
+  // ポップアップキューを組み立てる
+  popupQueue=[];
+
   if(jokeJob){
-    showJokeModal(jokeJob);
-  } else if(newLv>oldLv||newJob.name!==oldJob.name){
-    showModal(newLv>oldLv,newLv,newJob,newJob.name!==oldJob.name);
-  } else if(newTitles.length>0){
-    showTitleModal(newTitles[0]);
+    popupQueue.push({type:'joke', job:jokeJob, bookTitle});
   }
+  if(newLv>oldLv){
+    popupQueue.push({type:'levelup', lv:newLv, oldParams, newParams, bookTitle});
+  }
+  if(newJob.name!==oldJob.name&&!jokeJob){
+    popupQueue.push({type:'job', job:newJob, bookTitle});
+  }
+  newTitles.forEach(t=>{
+    popupQueue.push({type:'title', title:t, bookTitle});
+  });
+
+  showNextPopup();
 }
 
 function deleteBook(id){
@@ -1144,70 +1142,86 @@ function updateCharacter(){
 let currentTweetText = '';
 
 function setTweetBtn(text){
-  currentTweetText = text;
-  document.getElementById('tweet-btn').style.display = 'inline-block';
+  currentTweetText=text;
+  document.getElementById('tweet-btn').style.display='inline-block';
 }
 
 function postToX(){
-  const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(currentTweetText);
-  window.open(url, '_blank');
-}
-
-function showModal(lvUp,lv,job,jobChanged){
-  const rl={normal:'つうじょう',rare:'レア',super:'ちょうレア',legend:'でんせつ'};
-  const lastBook = books[0] || {};
-  const title = lastBook.title || '';
-
-  if(lvUp&&jobChanged){
-    document.getElementById('modal-icon').textContent='★';
-    document.getElementById('modal-title').textContent='レベルアップ！しょくぎょうが かわった！';
-    document.getElementById('modal-sub').textContent='Lv '+lv+' に なった！\nどくしょの けいこうが しょくぎょうを かえた。';
-    document.getElementById('modal-job').textContent=job.name;
-    setTweetBtn(`📖「${title}」読了！\nLv.${lv-1} → Lv.${lv} にアップ！\n職業：${job.name}\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
-  } else if(lvUp){
-    document.getElementById('modal-icon').textContent='↑';
-    document.getElementById('modal-title').textContent='レベルアップ！';
-    document.getElementById('modal-sub').textContent='Lv '+lv+' に なった！\nどくしょを つづけて ちからを たかめよう。';
-    document.getElementById('modal-job').textContent='';
-    setTweetBtn(`📖「${title}」読了！\nLv.${lv-1} → Lv.${lv} にアップ！\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
-  } else {
-    const icons={normal:'◇',rare:'◆',super:'★',legend:'✦'};
-    document.getElementById('modal-icon').textContent=icons[job.rarity]||'◇';
-    document.getElementById('modal-title').textContent='しょくぎょうが かわった！';
-    document.getElementById('modal-sub').textContent='【'+rl[job.rarity]+'】\n'+job.desc;
-    document.getElementById('modal-job').textContent=job.name;
-    setTweetBtn(`📖「${title}」読了！\n職業が「${job.name}」に変わった！【${rl[job.rarity]}】\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
-  }
-  document.getElementById('modal').classList.add('show');
-}
-
-function showJokeModal(j){
-  const lastBook = books[0] || {};
-  const title = lastBook.title || '';
-  document.getElementById('modal').classList.add('show','modal-joke');
-  document.getElementById('modal-icon').textContent='🎭';
-  document.getElementById('modal-title').textContent='とくべつな しょくぎょうが あらわれた！';
-  document.getElementById('modal-sub').textContent=j.desc;
-  document.getElementById('modal-job').textContent=j.name;
-  setTweetBtn(`📖「${title}」読了！\nとくべつな職業「${j.name}」があらわれた！🎭\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
-}
-
-function showTitleModal(t){
-  const lastBook = books[0] || {};
-  const title = lastBook.title || '';
-  document.getElementById('modal').classList.add('show');
-  document.getElementById('modal').classList.remove('modal-joke');
-  document.getElementById('modal-icon').textContent=t.icon;
-  document.getElementById('modal-title').textContent='しょうごう かいじょ！';
-  document.getElementById('modal-sub').textContent='あたらしい しょうごうを てにいれた！';
-  document.getElementById('modal-job').textContent=t.name;
-  setTweetBtn(`📖「${title}」読了！\n称号「${t.name}」${t.icon}を獲得！\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
+  window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(currentTweetText),'_blank');
 }
 
 function closeModal(){
   document.getElementById('modal').classList.remove('show','modal-joke');
   document.getElementById('tweet-btn').style.display='none';
   currentTweetText='';
+  if(popupQueue.length) setTimeout(showNextPopup, 400);
+}
+
+function showNextPopup(){
+  if(!popupQueue.length) return;
+  const item=popupQueue.shift();
+  if(item.type==='levelup')  showLevelUpModal(item);
+  else if(item.type==='job') showJobModal(item);
+  else if(item.type==='joke') showJokeModal(item.job, item.bookTitle);
+  else if(item.type==='title') showTitleModal(item.title, item.bookTitle);
+}
+
+function showLevelUpModal(item){
+  const {lv, oldParams, newParams, bookTitle}=item;
+  const paramKeys=['知識力','感受力','探究力','世界力','創造力'];
+  const paramColors={'知識力':'#4a9fd8','感受力':'#d05858','探究力':'#d4a017','世界力':'#50a870','創造力':'#9060d0'};
+  const diffs=paramKeys.map(k=>({k,old:oldParams[k],nw:newParams[k],diff:newParams[k]-oldParams[k]})).filter(d=>d.diff>0);
+
+  const diffHTML=diffs.map(d=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:13px">
+      <span style="width:52px;color:#f5e8c8">${d.k}</span>
+      <span style="color:${paramColors[d.k]}">${d.old}</span>
+      <span style="color:#7a6a50;font-size:11px">→</span>
+      <span style="color:${paramColors[d.k]};font-weight:500">${d.nw}</span>
+      <span style="color:${paramColors[d.k]};font-size:12px;margin-left:2px">▲+${d.diff}</span>
+    </div>`).join('');
+
+  const paramTxt=diffs.map(d=>`${d.k}+${d.diff}`).join(' / ');
+  setTweetBtn(`📖「${bookTitle}」読了！\nLv.${lv-1} → Lv.${lv} にアップ！\n${paramTxt}\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
+
+  document.getElementById('modal-icon').textContent='↑';
+  document.getElementById('modal-title').textContent='レベルアップ！';
+  document.getElementById('modal-sub').innerHTML=`<div style="margin-bottom:8px">Lv.${lv-1} → <span style="color:#f0c040;font-size:16px">Lv.${lv}</span> に なった！</div><div style="background:#1a0500;border:1px solid #8b3a00;padding:10px;text-align:left">${diffHTML||'<span style="font-size:12px;color:#7a6a50">パラメータが底上げされました</span>'}</div>`;
+  document.getElementById('modal-job').textContent='';
+  document.getElementById('modal').classList.remove('modal-joke');
+  document.getElementById('modal').classList.add('show');
+}
+
+function showJobModal(item){
+  const {job, bookTitle}=item;
+  const rl={normal:'つうじょう',rare:'レア',super:'ちょうレア',legend:'でんせつ'};
+  const icons={normal:'◇',rare:'◆',super:'★',legend:'✦'};
+  setTweetBtn(`📖「${bookTitle}」読了！\n職業が「${job.name}」に変わった！【${rl[job.rarity]}】\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
+  document.getElementById('modal-icon').textContent=icons[job.rarity]||'◇';
+  document.getElementById('modal-title').textContent='しょくぎょうが かわった！';
+  document.getElementById('modal-sub').textContent='【'+rl[job.rarity]+'】\n'+job.desc;
+  document.getElementById('modal-job').textContent=job.name;
+  document.getElementById('modal').classList.remove('modal-joke');
+  document.getElementById('modal').classList.add('show');
+}
+
+function showJokeModal(j, bookTitle){
+  setTweetBtn(`📖「${bookTitle}」読了！\nとくべつな職業「${j.name}」があらわれた！🎭\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
+  document.getElementById('modal-icon').textContent='🎭';
+  document.getElementById('modal-title').textContent='とくべつな しょくぎょうが あらわれた！';
+  document.getElementById('modal-sub').textContent=j.desc;
+  document.getElementById('modal-job').textContent=j.name;
+  document.getElementById('modal').classList.add('show','modal-joke');
+}
+
+function showTitleModal(t, bookTitle){
+  setTweetBtn(`📖「${bookTitle}」読了！\n称号「${t.name}」${t.icon}を獲得！\n\n読書クエストで冒険中📚\nhttps://dokusho-quest.netlify.app\n\n#読書クエスト #読書記録 #読了`);
+  document.getElementById('modal-icon').textContent=t.icon;
+  document.getElementById('modal-title').textContent='しょうごう かいじょ！';
+  document.getElementById('modal-sub').textContent='あたらしい しょうごうを てにいれた！';
+  document.getElementById('modal-job').textContent=t.name;
+  document.getElementById('modal').classList.remove('modal-joke');
+  document.getElementById('modal').classList.add('show');
 }
 
 // ── Export / Import ──
