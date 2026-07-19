@@ -603,7 +603,8 @@ header {
                 <option value="歴史・地理">歴史・地理</option>
                 <option value="旅行・紀行">旅行・紀行</option>
                 <option value="恋愛・ロマンス">恋愛・ロマンス</option>
-                <option value="その他">その他</option>
+                <option value="マンガ・コミック">マンガ・コミック</option>
+              <option value="その他">その他</option>
               </select>
             </div>
             <div class="meta-item">
@@ -730,6 +731,7 @@ const GP = {
   '歴史・時代小説':    {知識力:3,感受力:2,探究力:2,世界力:5,創造力:1},
   '歴史・地理':        {知識力:3,感受力:0,探究力:2,世界力:6,創造力:0},
   '旅行・紀行':        {知識力:1,感受力:2,探究力:1,世界力:6,創造力:2},
+  'マンガ・コミック':      {知識力:1,感受力:5,探究力:1,世界力:1,創造力:4},
   'その他':            {知識力:1,感受力:1,探究力:1,世界力:1,創造力:1},
 };
 
@@ -873,7 +875,7 @@ function checkJokeJob(oldCount, newCount){
 
 const PARAM_COLORS={知識力:'#00b8f8',感受力:'#f85858',探究力:'#f8f800',世界力:'#00d800',創造力:'#d860f8'};
 const RARITY_MAP={normal:['つうじょう','rarity-normal'],rare:['レア','rarity-rare'],super:['ちょうレア','rarity-super'],legend:['でんせつ','rarity-legend']};
-const GENRE_ICONS={'人文・学術':'📚','ビジネス・自己啓発':'💼','科学・技術':'🔬','文芸・小説':'📖','詩・エッセイ':'✒️','恋愛・ロマンス':'💌','ミステリー・SF':'🔍','ファンタジー・冒険':'⚔️','芸術・デザイン':'🎨','歴史・時代小説':'🏯','歴史・地理':'🗺️','旅行・紀行':'✈️','その他':'📗'};
+const GENRE_ICONS={'人文・学術':'📚','ビジネス・自己啓発':'💼','科学・技術':'🔬','文芸・小説':'📖','詩・エッセイ':'✒️','恋愛・ロマンス':'💌','ミステリー・SF':'🔍','ファンタジー・冒険':'⚔️','芸術・デザイン':'🎨','歴史・時代小説':'🏯','歴史・地理':'🗺️','旅行・紀行':'✈️','マンガ・コミック':'📝','その他':'📗'};
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
@@ -984,7 +986,7 @@ function mapCat(cats){
   if(s.includes('art')||s.includes('design')) return '芸術・デザイン';
   if(s.includes('business')||s.includes('self-help')) return 'ビジネス・自己啓発';
   if(s.includes('science')||s.includes('technology')) return '科学・技術';
-  if(s.includes('romance')||s.includes('love')) return '恋愛・ロマンス';
+  if(s.includes('comic')||s.includes('manga')||s.includes('graphic novel')) return 'マンガ・コミック';
   if(s.includes('fiction')||s.includes('novel')||s.includes('literary')) return '文芸・小説';
   return 'その他';
 }
