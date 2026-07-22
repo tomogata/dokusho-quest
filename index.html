@@ -350,8 +350,8 @@ header {
   background: var(--win-bg);
   border: 3px solid var(--win-border2);
   outline: 3px solid var(--navy);
-  padding: 32px 28px; text-align:center;
-  max-width: 380px; width:90%;
+  padding: 28px 32px; text-align:center;
+  max-width: 480px; width:94%;
   box-shadow: 6px 6px 0 #000;
   animation: modalIn .3s steps(8);
   position: relative;
@@ -1175,12 +1175,12 @@ function showLevelUpModal(item){
   const diffs=paramKeys.map(k=>({k,old:oldParams[k],nw:newParams[k],diff:newParams[k]-oldParams[k]})).filter(d=>d.diff>0);
 
   const diffHTML=diffs.map(d=>`
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:13px">
-      <span style="width:52px;color:#f5e8c8">${d.k}</span>
-      <span style="color:${paramColors[d.k]}">${d.old}</span>
-      <span style="color:#7a6a50;font-size:11px">→</span>
-      <span style="color:${paramColors[d.k]};font-weight:500">${d.nw}</span>
-      <span style="color:${paramColors[d.k]};font-size:12px;margin-left:2px">▲+${d.diff}</span>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;white-space:nowrap">
+      <span style="width:56px;flex-shrink:0;color:#f5e8c8">${d.k}</span>
+      <span style="color:${paramColors[d.k]};flex-shrink:0">${d.old}</span>
+      <span style="color:#7a6a50;font-size:11px;flex-shrink:0">→</span>
+      <span style="color:${paramColors[d.k]};font-weight:500;flex-shrink:0">${d.nw}</span>
+      <span style="color:${paramColors[d.k]};font-size:12px;flex-shrink:0">▲+${d.diff}</span>
     </div>`).join('');
 
   const paramTxt=diffs.map(d=>`${d.k}+${d.diff}`).join(' / ');
